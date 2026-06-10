@@ -4,6 +4,7 @@ import java.awt.BorderLayout;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.HashMap;
+import java.util.HashSet;
 
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
@@ -41,6 +42,9 @@ public class MainChatFrame
     private HashMap<String,
             PrivateChatFrame> chatsPrivados =
             new HashMap<>();
+        
+    private HashSet<String> mensajesPendientes =
+        new HashSet<>();
 
     public MainChatFrame(
             String usuario,
@@ -207,13 +211,27 @@ public class MainChatFrame
     private void abrirChatPrivado() {
 
         String seleccionado =
-                listaUsuarios.getSelectedValue();
+            listaUsuarios.getSelectedValue();
+
+        if(seleccionado != null) {
+
+        seleccionado =
+                seleccionado.replace(
+                        "*",
+                        ""
+                );
 
         if(seleccionado == null
                 || seleccionado.equals(usuario)) {
 
             return;
         }
+                
+        mensajesPendientes.remove(
+        seleccionado
+        );
+
+        actualizarListaUsuarios();
 
         if(!chatsPrivados.containsKey(
                 seleccionado)) {
@@ -230,7 +248,8 @@ public class MainChatFrame
         chatsPrivados.get(
                 seleccionado
         ).setVisible(true);
-    }
+        }
+}
 
     @Override
     public void onMessageReceived(
@@ -279,7 +298,16 @@ public class MainChatFrame
 
                     for(String u : usuarios) {
 
+                        if(mensajesPendientes.contains(u)) {
+
+                                modeloUsuarios.addElement(
+                                "📩 " + u
+                                );
+
+                        } else {
+
                         modeloUsuarios.addElement(u);
+                        }
                     }
                 }
 
@@ -293,16 +321,20 @@ public class MainChatFrame
                 String contenido =
                         partes[2];
 
+                marcarPendiente(remitente);
+
+                actualizarListaUsuarios();
+
                 if(!chatsPrivados.containsKey(
                         remitente)) {
 
-                    chatsPrivados.put(
-                            remitente,
-                            new PrivateChatFrame(
-                                    remitente,
-                                    this
-                            )
-                    );
+                        chatsPrivados.put(
+                                remitente,
+                                new PrivateChatFrame(
+                                        remitente,
+                                        this
+                                )
+                        );
                 }
 
                 chatsPrivados.get(
@@ -314,7 +346,7 @@ public class MainChatFrame
 
                 break;
 
-            case "ERROR":
+        case "ERROR":
 
                 JOptionPane.showMessageDialog(
                         this,
@@ -324,4 +356,33 @@ public class MainChatFrame
                 break;
         }
     }
+    private void marcarPendiente(String usuario) {
+
+    mensajesPendientes.add(usuario);
 }
+
+        private void actualizarListaUsuarios() {
+
+                for (int i = 0; i < modeloUsuarios.size(); i++) {
+
+                String nombre = modeloUsuarios.get(i);
+
+                String limpio = nombre.replace("*", "");
+
+                if (mensajesPendientes.contains(limpio)) {
+
+                modeloUsuarios.set(
+                    i,
+                    "*" + limpio
+                );
+
+                        } else {
+
+                        modeloUsuarios.set(
+                        i,
+                        limpio
+                        );
+                }
+                }
+                }    
+        }
